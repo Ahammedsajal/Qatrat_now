@@ -2476,6 +2476,11 @@ buildConvertedPrice(
                 final String qty = data['total_quantity'];
                 context.read<UserProvider>().setCartCount(data['cart_count']);
                 cartList[index].qty = qty;
+                // Update per item total based on new quantity
+                cartList[index].perItemTotal =
+                    (double.parse(cartList[index].netAmt ?? '0') *
+                            double.parse(qty))
+                        .toString();
                 originalPrice = double.parse(data['sub_total']);
                 _controller[index].text = qty;
                 totalPrice = 0;
@@ -2963,6 +2968,10 @@ buildConvertedPrice(
                         .removeCartItem(cartList[index].varientId!);
                   } else {
                     cartList[index].qty = qty.toString();
+                    cartList[index].perItemTotal =
+                        (double.parse(cartList[index].netAmt ?? '0') *
+                                double.parse(qty.toString()))
+                            .toString();
                   }
                   originalPrice = double.parse(data[SUB_TOTAL]);
                   if (IS_SHIPROCKET_ON == "0") {
