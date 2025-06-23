@@ -139,7 +139,9 @@ import '../../utils/Hive/hive_utils.dart';
         return;
       }
       final unit = double.parse(l[i].perItemPrice!);
-      final snap = [l[i].qty, l[i].perItemTotal, originalPrice];
+      final snapQty = l[i].qty;
+      final snapItemTotal = l[i].perItemTotal;
+      final snapPrice = originalPrice;
       l[i]
         ..qty = nq.toString()
         ..perItemTotal = (unit * nq).toString();
@@ -158,8 +160,10 @@ import '../../utils/Hive/hive_utils.dart';
         totalPrice = originalPrice;
         if (nq == 0) l.removeAt(i);
       } catch (e) {
-        l[i]..qty = snap[0]..perItemTotal = snap[1];
-        originalPrice = totalPrice = snap[2];
+        l[i]
+          ..qty = snapQty
+          ..perItemTotal = snapItemTotal;
+        originalPrice = totalPrice = snapPrice;
         setSnackbar(e.toString(), context);
       }
       setState(() {});
