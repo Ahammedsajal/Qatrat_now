@@ -2555,19 +2555,68 @@ buildConvertedPrice(
       }
     }
 
+    void _updateQtyLocally(int index, String qty, List<SectionModel> cartList) {
+      cartList[index].qty = qty;
+      cartList[index].perItemTotal =
+          (double.parse(cartList[index].netAmt ?? '0') * double.parse(qty))
+              .toString();
+      if (_controller.length > index) _controller[index].text = qty;
+      final selPos = cartList[index]
+          .productList![0]
+          .prVarientList!
+          .indexWhere((e) => e.id == cartList[index].varientId);
+      context.read<CartProvider>().updateCartItem(
+            cartList[index].productList![0].id,
+            qty,
+            selPos,
+            cartList[index].varientId!,
+          );
+    }
+
+    void _refreshTotals(List<SectionModel> cartList) {
+      originalPrice = 0;
+      for (final item in cartList) {
+        originalPrice += double.parse(item.netAmt ?? '0') *
+            double.parse(item.qty ?? '0');
+      }
+      if (IS_SHIPROCKET_ON == "0" && addressList.isNotEmpty) {
+        if (!ISFLAT_DEL) {
+          if (originalPrice <
+              double.parse(addressList[selectedAddress!].freeAmt!)) {
+            deliveryCharge =
+                double.parse(addressList[selectedAddress!].deliveryCharge!);
+          } else {
+            deliveryCharge = 0;
+          }
+        } else {
+          if (originalPrice < double.parse(MIN_AMT!)) {
+            deliveryCharge = double.parse(CUR_DEL_CHR!);
+          } else {
+            deliveryCharge = 0;
+          }
+        }
+      }
+      totalPrice = originalPrice;
+    }
+
     Future<void> addToCartCheckout(
       int index,
       String qty,
       List<SectionModel> cartList,
     ) async {
+      if (int.parse(qty) < cartList[index].productList![0].minOrderQuntity!) {
+        qty = cartList[index].productList![0].minOrderQuntity.toString();
+        setSnackbar("${getTranslated(context, 'MIN_MSG')}$qty", context);
+      }
+      _updateQtyLocally(index, qty, cartList);
+      _refreshTotals(cartList);
+      checkoutState?.call(() {});
+      setState(() {});
+
       _isNetworkAvailable = await isNetworkAvailable();
       if (_isNetworkAvailable) {
         try {
           context.read<CartProvider>().setProgress(true);
-          if (int.parse(qty) < cartList[index].productList![0].minOrderQuntity!) {
-            qty = cartList[index].productList![0].minOrderQuntity.toString();
-            setSnackbar("${getTranslated(context, 'MIN_MSG')}$qty", context);
-          }
           final parameter = {
             PRODUCT_VARIENT_ID: cartList[index].varientId,
             USER_ID: context.read<UserProvider>().userId,
@@ -2938,12 +2987,11 @@ buildConvertedPrice(
       }
     }
 
-    removeFromCartCheckout(
+  removeFromCartCheckout(
       int index,
       bool remove,
       List<SectionModel> cartList,
     ) async {
-      _isNetworkAvailable = await isNetworkAvailable();
       if (!remove &&
           int.parse(cartList[index].qty!) ==
               cartList[index].productList![0].minOrderQuntity) {
@@ -2951,118 +2999,127 @@ buildConvertedPrice(
           "${getTranslated(context, 'MIN_MSG')}${cartList[index].qty}",
           context,
         );
+        return;
+      }
+
+      int? qty;
+      if (remove) {
+        qty = 0;
       } else {
-        if (_isNetworkAvailable) {
-          try {
-            context.read<CartProvider>().setProgress(true);
-            int? qty;
-            if (remove) {
-              qty = 0;
-            } else {
-              qty = int.parse(cartList[index].qty!) -
-                  int.parse(cartList[index].productList![0].qtyStepSize!);
-              if (qty < cartList[index].productList![0].minOrderQuntity!) {
-                qty = cartList[index].productList![0].minOrderQuntity;
-                setSnackbar("${getTranslated(context, 'MIN_MSG')}$qty", context);
-              }
-            }
-            final parameter = {
-              PRODUCT_VARIENT_ID: cartList[index].varientId,
-              USER_ID: context.read<UserProvider>().userId,
-              QTY: qty.toString(),
-            };
-            apiBaseHelper.postAPICall(manageCartApi, parameter).then(
-              (getdata) {
-                final bool error = getdata["error"];
-                final String? msg = getdata["message"];
-                if (!error) {
-                  final data = getdata["data"];
-                  final String? qty = data['total_quantity'];
-                  context.read<UserProvider>().setCartCount(data['cart_count']);
-                  if (qty == "0") remove = true;
-                  if (remove) {
-                    context
-                        .read<CartProvider>()
-                        .removeCartItem(cartList[index].varientId!);
-                  } else {
-                    cartList[index].qty = qty.toString();
-                    cartList[index].perItemTotal =
-                        (double.parse(cartList[index].netAmt ?? '0') *
-                                double.parse(qty.toString()))
-                            .toString();
-                  }
-
-                  // update provider cart list with latest items
-                  if (getdata.containsKey('cart')) {
-                    final cart = getdata['cart'];
-                    final List<SectionModel> uptcartList = (cart as List)
-                        .map((cart) => SectionModel.fromCart(cart))
-                        .toList();
-                    context.read<CartProvider>().setCartlist(uptcartList);
-                  }
-
-                  originalPrice = double.parse(data[SUB_TOTAL]);
-                  if (IS_SHIPROCKET_ON == "0") {
-                    if (!ISFLAT_DEL) {
-                      if (originalPrice <
-                          double.parse(addressList[selectedAddress!].freeAmt!)) {
-                        deliveryCharge = double.parse(
-                          addressList[selectedAddress!].deliveryCharge!,
-                        );
-                      } else {
-                        deliveryCharge = 0;
-                      }
-                    } else {
-                      if (originalPrice < double.parse(MIN_AMT!)) {
-                        deliveryCharge = double.parse(CUR_DEL_CHR!);
-                      } else {
-                        deliveryCharge = 0;
-                      }
-                    }
-                  }
-                  totalPrice = 0;
-                  totalPrice = originalPrice;
-                  if (isPromoValid!) {
-                    validatePromo(true);
-                  } else if (isUseWallet!) {
-                    if (mounted) {
-                      checkoutState?.call(() {
-                        remWalBal = 0;
-                        paymentMethod = null;
-                        usedBalance = 0;
-                        isPayLayShow = true;
-                        isUseWallet = false;
-                      });
-                    }
-                    context.read<CartProvider>().setProgress(false);
-                    setState(() {});
-                  } else {
-                    context.read<CartProvider>().setProgress(false);
-                    checkoutState?.call(() {});
-                    setState(() {});
-                  }
-                } else {
-                  setSnackbar(msg!, context);
-                  context.read<CartProvider>().setProgress(false);
-                }
-              },
-              onError: (error) {
-                setSnackbar(error.toString(), context);
-              },
-            );
-          } on TimeoutException catch (_) {
-            setSnackbar(getTranslated(context, 'somethingMSg')!, context);
-            context.read<CartProvider>().setProgress(false);
-            checkoutState?.call(() {});
-          }
-        } else {
-          if (mounted) {
-            checkoutState?.call(() {
-              _isNetworkAvailable = false;
-            });
-          }
-          setState(() {});
+        qty = int.parse(cartList[index].qty!) -
+            int.parse(cartList[index].productList![0].qtyStepSize!);
+        if (qty < cartList[index].productList![0].minOrderQuntity!) {
+          qty = cartList[index].productList![0].minOrderQuntity;
         }
+      }
+
+      if (remove && qty == 0) {
+        context.read<CartProvider>().removeCartItem(cartList[index].varientId!);
+      } else {
+        _updateQtyLocally(index, qty.toString(), cartList);
+      }
+      _refreshTotals(context.read<CartProvider>().cartList);
+      checkoutState?.call(() {});
+      setState(() {});
+
+      _isNetworkAvailable = await isNetworkAvailable();
+      if (_isNetworkAvailable) {
+        try {
+          context.read<CartProvider>().setProgress(true);
+          final parameter = {
+            PRODUCT_VARIENT_ID: cartList[index].varientId,
+            USER_ID: context.read<UserProvider>().userId,
+            QTY: qty.toString(),
+          };
+          apiBaseHelper.postAPICall(manageCartApi, parameter).then(
+            (getdata) {
+              final bool error = getdata["error"];
+              final String? msg = getdata["message"];
+              if (!error) {
+                final data = getdata["data"];
+                final String? qty = data['total_quantity'];
+                context.read<UserProvider>().setCartCount(data['cart_count']);
+                if (qty == "0") remove = true;
+                if (remove) {
+                  context
+                      .read<CartProvider>()
+                      .removeCartItem(cartList[index].varientId!);
+                } else {
+                  cartList[index].qty = qty.toString();
+                  cartList[index].perItemTotal =
+                      (double.parse(cartList[index].netAmt ?? '0') *
+                              double.parse(qty.toString()))
+                          .toString();
+                }
+
+                if (getdata.containsKey('cart')) {
+                  final cart = getdata['cart'];
+                  final List<SectionModel> uptcartList = (cart as List)
+                      .map((cart) => SectionModel.fromCart(cart))
+                      .toList();
+                  context.read<CartProvider>().setCartlist(uptcartList);
+                }
+
+                originalPrice = double.parse(data[SUB_TOTAL]);
+                if (IS_SHIPROCKET_ON == "0") {
+                  if (!ISFLAT_DEL) {
+                    if (originalPrice <
+                        double.parse(addressList[selectedAddress!].freeAmt!)) {
+                      deliveryCharge = double.parse(
+                        addressList[selectedAddress!].deliveryCharge!,
+                      );
+                    } else {
+                      deliveryCharge = 0;
+                    }
+                  } else {
+                    if (originalPrice < double.parse(MIN_AMT!)) {
+                      deliveryCharge = double.parse(CUR_DEL_CHR!);
+                    } else {
+                      deliveryCharge = 0;
+                    }
+                  }
+                }
+                totalPrice = originalPrice;
+                if (isPromoValid!) {
+                  validatePromo(true);
+                } else if (isUseWallet!) {
+                  if (mounted) {
+                    checkoutState?.call(() {
+                      remWalBal = 0;
+                      paymentMethod = null;
+                      usedBalance = 0;
+                      isPayLayShow = true;
+                      isUseWallet = false;
+                    });
+                  }
+                  context.read<CartProvider>().setProgress(false);
+                  setState(() {});
+                } else {
+                  context.read<CartProvider>().setProgress(false);
+                  checkoutState?.call(() {});
+                  setState(() {});
+                }
+              } else {
+                setSnackbar(msg!, context);
+                context.read<CartProvider>().setProgress(false);
+              }
+            },
+            onError: (error) {
+              setSnackbar(error.toString(), context);
+            },
+          );
+        } on TimeoutException catch (_) {
+          setSnackbar(getTranslated(context, 'somethingMSg')!, context);
+          context.read<CartProvider>().setProgress(false);
+          checkoutState?.call(() {});
+        }
+      } else {
+        if (mounted) {
+          checkoutState?.call(() {
+            _isNetworkAvailable = false;
+          });
+        }
+        setState(() {});
       }
     }
 
@@ -3911,10 +3968,13 @@ buildConvertedPrice(
       return StatefulBuilder(
         builder: (context, setState) {
           checkoutState = setState;
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: SafeArea(
+          return Consumer<CartProvider>(
+            builder: (context, cartProvider, child) {
+              final cartList = cartProvider.cartList;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: SafeArea(
               bottom: Platform.isAndroid ? false : true,
               child: Container(
                 constraints: BoxConstraints(
