@@ -1,0 +1,2 @@
+/Users/ahammed/Documents/Qatrat_kheir_final26_4_25/android/app/.cxx/RelWithDebInfo/3v166842/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/ahammed/Documents/Qatrat_kheir_final26_4_25/android/app/.cxx/RelWithDebInfo/3v166842/armeabi-v7a/CMakeFiles/rebuild_cache.dir
