@@ -125,6 +125,46 @@ import '../../utils/Hive/hive_utils.dart';
       }
     }
 
+    Future<void> _optimisticQtyChange(
+      int i,
+      int d,
+      List<SectionModel> l,
+    ) async {
+      if (context.read<CartProvider>().isProgress) return;
+      int nq = int.parse(l[i].qty!) + d;
+      if (nq < 0) nq = 0;
+      final min = l[i].productList![0].minOrderQuntity!;
+      if (nq != 0 && nq < min) {
+        setSnackbar("${getTranslated(context, 'MIN_MSG')}$min", context);
+        return;
+      }
+      final unit = double.parse(l[i].perItemPrice!);
+      final snap = [l[i].qty, l[i].perItemTotal, originalPrice];
+      l[i]
+        ..qty = nq.toString()
+        ..perItemTotal = (unit * nq).toString();
+      originalPrice += d * unit;
+      totalPrice = originalPrice;
+      setState(() {});
+      checkoutState?.call(() {});
+      try {
+        final r = await apiBaseHelper.postAPICall(manageCartApi, {
+          PRODUCT_VARIENT_ID: l[i].varientId,
+          USER_ID: context.read<UserProvider>().userId,
+          QTY: nq.toString(),
+        });
+        if (r['error']) throw r['message'];
+        originalPrice = double.parse(r['data'][SUB_TOTAL]);
+        totalPrice = originalPrice;
+        if (nq == 0) l.removeAt(i);
+      } catch (e) {
+        l[i]..qty = snap[0]..perItemTotal = snap[1];
+        originalPrice = totalPrice = snap[2];
+        setSnackbar(e.toString(), context);
+      }
+      setState(() {});
+      checkoutState?.call(() {});
+    }
     @override
     void initState() {
       super.initState();
@@ -1573,9 +1613,13 @@ buildConvertedPrice(
                                                     .read<CartProvider>()
                                                     .isProgress ==
                                                 false) {
-                                              removeFromCartCheckout(
+                                              _optimisticQtyChange(
                                                 index,
-                                                false,
+                                                -int.parse(
+                                                  cartList[index]
+                                                      .productList![0]
+                                                      .qtyStepSize!,
+                                                ),
                                                 cartList,
                                               );
                                             }
@@ -1586,18 +1630,15 @@ buildConvertedPrice(
                                           height: 20,
                                           child: Stack(
                                             children: [
-                                              TextField(
-                                                textAlign: TextAlign.center,
-                                                readOnly: true,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .fontColor,
-                                                ),
-                                                controller: _controller[index],
-                                                decoration: const InputDecoration(
-                                                  border: InputBorder.none,
+                                              Center(
+                                                child: Text(
+                                                  cartList[index].qty!,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .fontColor,
+                                                  ),
                                                 ),
                                               ),
                                               PopupMenuButton<String>(
@@ -1607,11 +1648,15 @@ buildConvertedPrice(
                                                   size: 1,
                                                 ),
                                                 onSelected: (String value) {
-                                                  addToCartCheckout(
-                                                    index,
-                                                    value,
-                                                    cartList,
-                                                  );
+                                                  final delta = int.parse(value) -
+                                                      int.parse(cartList[index].qty!);
+                                                  if (delta != 0) {
+                                                    _optimisticQtyChange(
+                                                      index,
+                                                      delta,
+                                                      cartList,
+                                                    );
+                                                  }
                                                 },
                                                 itemBuilder:
                                                     (BuildContext context) {
@@ -1656,17 +1701,13 @@ buildConvertedPrice(
                                                     .read<CartProvider>()
                                                     .isProgress ==
                                                 false) {
-                                              addToCartCheckout(
+                                              _optimisticQtyChange(
                                                 index,
-                                                (int.parse(
-                                                          cartList[index].qty!,
-                                                        ) +
-                                                        int.parse(
-                                                          cartList[index]
-                                                              .productList![0]
-                                                              .qtyStepSize!,
-                                                        ))
-                                                    .toString(),
+                                                int.parse(
+                                                  cartList[index]
+                                                      .productList![0]
+                                                      .qtyStepSize!,
+                                                ),
                                                 cartList,
                                               );
                                             }
