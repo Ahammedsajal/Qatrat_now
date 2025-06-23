@@ -2582,9 +2582,24 @@ buildConvertedPrice(
                 final String qty = data['total_quantity'];
                 context.read<UserProvider>().setCartCount(data['cart_count']);
                 cartList[index].qty = qty;
+                // Update per item total as well
+                cartList[index].perItemTotal =
+                    (double.parse(cartList[index].netAmt ?? '0') *
+                            double.parse(qty))
+                        .toString();
+
                 originalPrice = double.parse(data['sub_total']);
                 _controller[index].text = qty;
                 totalPrice = 0;
+                // update cart provider list from api response
+                if (getdata.containsKey('cart')) {
+                  final cart = getdata['cart'];
+                  final List<SectionModel> uptcartList = (cart as List)
+                      .map((cart) => SectionModel.fromCart(cart))
+                      .toList();
+                  context.read<CartProvider>().setCartlist(uptcartList);
+                }
+
                 if (IS_SHIPROCKET_ON == "0") {
                   if (!ISFLAT_DEL) {
                     if (originalPrice <
@@ -2976,6 +2991,16 @@ buildConvertedPrice(
                                 double.parse(qty.toString()))
                             .toString();
                   }
+
+                  // update provider cart list with latest items
+                  if (getdata.containsKey('cart')) {
+                    final cart = getdata['cart'];
+                    final List<SectionModel> uptcartList = (cart as List)
+                        .map((cart) => SectionModel.fromCart(cart))
+                        .toList();
+                    context.read<CartProvider>().setCartlist(uptcartList);
+                  }
+
                   originalPrice = double.parse(data[SUB_TOTAL]);
                   if (IS_SHIPROCKET_ON == "0") {
                     if (!ISFLAT_DEL) {
@@ -3074,6 +3099,10 @@ buildConvertedPrice(
                   cartList.removeWhere(
                     (item) => item.varientId == cartList[index].varientId,
                   );
+                  // notify provider about removal
+                  context
+                      .read<CartProvider>()
+                      .setCartlist(List.from(cartList));
                   context.read<UserProvider>().setCartCount(data['total_items']);
                   originalPrice = double.parse(data[SUB_TOTAL]);
                   if (IS_SHIPROCKET_ON == "0") {
@@ -3117,6 +3146,9 @@ buildConvertedPrice(
                   cartList.removeWhere(
                     (item) => item.varientId == cartList[index].varientId,
                   );
+                  context
+                      .read<CartProvider>()
+                      .setCartlist(List.from(cartList));
                 }
                 context.read<CartProvider>().setProgress(false);
                 setState(() {});
@@ -3199,6 +3231,9 @@ buildConvertedPrice(
                       cartList.removeWhere(
                         (item) => item.varientId == cartList[index].varientId,
                       );
+                      context
+                          .read<CartProvider>()
+                          .setCartlist(List.from(cartList));
                     } else {
                       cartList[index].qty = qty.toString();
                     }
@@ -3249,6 +3284,9 @@ buildConvertedPrice(
                       cartList.removeWhere(
                         (item) => item.varientId == cartList[index].varientId,
                       );
+                      context
+                          .read<CartProvider>()
+                          .setCartlist(List.from(cartList));
                     }
                   }
                 } else {
