@@ -1346,6 +1346,9 @@ import '../../utils/Hive/hive_utils.dart';
                       : price) *
                   double.parse(cartList[index].qty!))
               .toString();
+      if (_controller.length < index + 1) {
+        _controller.add(TextEditingController());
+      }
       _controller[index].text = cartList[index].qty!;
       List att = [];
       List val = [];
