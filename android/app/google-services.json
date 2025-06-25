@@ -1,29 +1,11 @@
 {
   "project_info": {
     "project_number": "388298698922",
+    "firebase_url": "https://customer-app-cad10-default-rtdb.firebaseio.com",
     "project_id": "customer-app-cad10",
     "storage_bucket": "customer-app-cad10.firebasestorage.app"
   },
   "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:388298698922:android:f6c1812221012f28b0a0d3",
-        "android_client_info": {
-          "package_name": "com.customersingle.customer"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAkrc_R44PxJ9yFitNMWbp_IdTUiqYBpRs"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
     {
       "client_info": {
         "mobilesdk_app_id": "1:388298698922:android:a71fd2c6b73fe285b0a0d3",
@@ -31,7 +13,28 @@
           "package_name": "com.the8thmiracle.customer"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "388298698922-41ssp76r0ebbmipf62fcctmn7eihhrt9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.the8thmiracle.customer",
+            "certificate_hash": "fe5b75209d593272ed003c64528b6151e40a51bb"
+          }
+        },
+        {
+          "client_id": "388298698922-pjhn3n5cm3eklvv78poq6lkb8fbic9il.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.the8thmiracle.customer",
+            "certificate_hash": "6263f11cdd54c8ca32fd56344a62f2714e36d54a"
+          }
+        },
+        {
+          "client_id": "388298698922-knjsni3mp584ddj7e3del1b40heisubh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAkrc_R44PxJ9yFitNMWbp_IdTUiqYBpRs"
@@ -39,7 +42,20 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "388298698922-7ig6qtlilul0b435aemgp5bk3s92639c.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "388298698922-frg9qq2gln7alrmf0nokvf0h0rhoroof.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customersingle.customer",
+                "app_store_id": "6743666276"
+              }
+            }
+          ]
         }
       }
     }
