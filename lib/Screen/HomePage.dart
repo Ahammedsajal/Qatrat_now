@@ -1993,7 +1993,7 @@ class NeumorphicSections extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 0,
-          childAspectRatio: 1.5,
+          childAspectRatio: 1.3,
         ),
         itemCount: sections.length,
         itemBuilder: (context, index) {
