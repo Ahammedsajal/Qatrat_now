@@ -20,14 +20,15 @@ android {
         jvmTarget = "17"
     }
 
-    signingConfigs {
-        release {
-            storeFile file("/Users/ahammed/Documents/your_keystore_name.jks")
-            storePassword "the8thmiracle"
-            keyAlias "your_key_alias"
-            keyPassword "the8thmiracle"
-        }
+  signingConfigs {
+    release {
+        storeFile file('../../your_keystore_name.jks')
+        storePassword "the8thmiracle"
+        keyAlias "your_key_alias"
+        keyPassword "the8thmiracle"
     }
+}
+
 
     defaultConfig {
         applicationId "com.the8thmiracle.customer"
