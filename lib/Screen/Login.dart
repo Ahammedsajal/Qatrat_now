@@ -1278,9 +1278,13 @@ Widget build(BuildContext context) {
 
   Future<UserCredential?> signInWithGoogle(BuildContext context) async {
   try {
-    // Initialize GoogleSignIn with the correct clientId for iOS
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId: '388298698922-frg9qq2gln7alrmf0nokvf0h0rhoroof.apps.googleusercontent.com',
+ // Provide the iOS clientId only when running on iOS.
+    // Android reads the configuration from google-services.json so
+    // passing the iOS identifier there can cause authentication issues.
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+       clientId: Platform.isIOS
+          ? '388298698922-frg9qq2gln7alrmf0nokvf0h0rhoroof.apps.googleusercontent.com'
+          : null,
       scopes: ["profile", "email"],
     );
 
