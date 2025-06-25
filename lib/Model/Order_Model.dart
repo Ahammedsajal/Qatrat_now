@@ -119,15 +119,28 @@ static const _host = 'http://qatratkheir.com/';        // ← your domain
       return raw.map<String>((e) => _abs(e.toString())).toList();
     }
 
-    // JSON-encoded string   "[\"uploads/…jpg\", …]"
+    // Possibly JSON-encoded one or more times
     if (raw is String && raw.trim().isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          return decoded.map<String>((e) => _abs(e.toString())).toList();
+      String s = raw.trim();
+      while (true) {
+        try {
+          final decoded = jsonDecode(s);
+          if (decoded is String) {
+            s = decoded;
+            continue; // handle double-encoded strings
+          }
+          if (decoded is List) {
+            return decoded
+                .map<String>((e) => _abs(e.toString()))
+                .toList();
+          }
+        } catch (_) {
+          break;
         }
-      } catch (_) {/* ignore */}
+        break;
+      }
     }
+
     return <String>[];
   }
 
